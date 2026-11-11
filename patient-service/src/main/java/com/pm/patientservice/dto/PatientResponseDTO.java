@@ -8,7 +8,7 @@ public class PatientResponseDTO {
     private String address;
     private String dateOfBirth;
 
-    public String getId(String string) {
+    public String getId() {
         return id;
     }
     public void setId(String id) {
