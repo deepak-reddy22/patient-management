@@ -1,0 +1,8 @@
+### Login with the account seeded by auth-service/data.sql
+POST http://localhost:4006/login
+Content-Type: application/json
+
+{
+  "email" : "testuser@test.com",
+  "password" : "password123"
+}

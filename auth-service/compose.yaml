@@ -1,0 +1,18 @@
+services:
+  auth-service:
+    build: .
+    image: localhost/auth-service:latest
+    container_name: auth-service
+    env_file:
+      - .env
+    ports:
+      - "4006:4006"
+    networks:
+      - internal
+      - patient-access
+
+networks:
+  internal:
+    external: true
+  patient-access:
+    external: true
