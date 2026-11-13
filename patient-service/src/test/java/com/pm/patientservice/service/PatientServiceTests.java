@@ -4,6 +4,8 @@ import com.pm.patientservice.dto.PatientRequestDTO;
 import com.pm.patientservice.exception.EmailAlreadyExistsException;
 import com.pm.patientservice.exception.PatientNotFoundException;
 import com.pm.patientservice.model.Patient;
+import com.pm.patientservice.grpc.BillingServiceGrpcClient;
+import com.pm.patientservice.kafka.KafkaProducer;
 import com.pm.patientservice.repository.PatientRepository;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +18,33 @@ import static org.mockito.Mockito.*;
 
 class PatientServiceTests {
     private final PatientRepository repository = mock(PatientRepository.class);
-    private final PatientService service = new PatientService(repository);
+    private final BillingServiceGrpcClient billingClient = mock(BillingServiceGrpcClient.class);
+    private final KafkaProducer kafkaProducer = mock(KafkaProducer.class);
+    private final PatientService service = new PatientService(repository, billingClient, kafkaProducer);
+
+    @Test
+    void createPublishesSavedPatient() {
+        PatientRequestDTO request = new PatientRequestDTO();
+        request.setName("Kafka Test Patient");
+        request.setEmail("kafka-test@example.com");
+        request.setAddress("Test address");
+        request.setDateOfBirth("1990-01-02");
+        request.setRegisteredDate("2026-11-13");
+        UUID id = UUID.randomUUID();
+        when(repository.save(any(Patient.class))).thenAnswer(invocation -> {
+            Patient patient = invocation.getArgument(0);
+            patient.setId(id);
+            return patient;
+        });
+
+        var response = service.createPatient(request);
+
+        assertEquals(id.toString(), response.getId());
+        var order = inOrder(repository, billingClient, kafkaProducer);
+        order.verify(repository).save(any(Patient.class));
+        order.verify(billingClient).createBillingAccount(id.toString(), request.getName(), request.getEmail());
+        order.verify(kafkaProducer).sendEvent(argThat(patient -> id.equals(patient.getId())));
+    }
 
     @Test
     void updateAllowsKeepingCurrentEmail() {

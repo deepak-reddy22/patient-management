@@ -1,0 +1,12 @@
+kafka:
+  clusters:
+    - name: local
+      bootstrap-servers: kafka:9092
+      default-key-serde: String
+      serde:
+        - name: PatientEvent
+          class-name: io.kafbat.ui.serdes.builtin.ProtobufFileSerde
+          topic-values-pattern: patient
+          properties:
+            protobufFilesDir: /schemas
+            protobufMessageName: patient.events.PatientEvent
